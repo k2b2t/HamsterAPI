@@ -4,6 +4,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.channels.ClosedChannelException;
+import java.util.Arrays;
 import java.util.UUID;
 
 import org.bukkit.Server;
@@ -212,7 +213,13 @@ public class HamsterPlayer {
 			this.networkManager = reflection.getField(playerConnection, reflection.getNetworkManager());
 			this.channel = (Channel) reflection.getField(networkManager, Channel.class);
 			this.iChatBaseComponentClass = reflection.getIChatBaseComponent();
-			this.sendPacketMethod = this.playerConnection.getClass().getMethod("sendPacket", reflection.getPacket());
+
+			//From https://github.com/sgtcaze/NametagEdit/blob/e7b7b25b5383c891cd014b6d0a852fb43a41b841/src/main/java/com/nametagedit/plugin/packets/PacketAccessor.java#L85
+			Class<?>[] sendPacketParameters = new Class[]{reflection.getPacket()};
+			this.sendPacketMethod = Arrays.stream(this.playerConnection.getClass().getMethods())
+					.filter(method -> Arrays.equals(method.getParameterTypes(), sendPacketParameters))
+					.findFirst().orElseThrow(NoSuchMethodException::new);
+
 			this.toChatBaseComponent = iChatBaseComponentClass.getDeclaredClasses()[0].getMethod("a", String.class);
 			this.setup = true;
 		}
